@@ -1,0 +1,5 @@
+#Pycachce
+__pycache__/
+
+#Path sesion
+flask_session/*
