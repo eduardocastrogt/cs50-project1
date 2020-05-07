@@ -6,7 +6,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 import requests
 
+
 app = Flask(__name__)
+
+# Get database_url
+
 
 # Check for environment variable
 if not os.getenv("DATABASE_URL"):
@@ -18,16 +22,10 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # Set up database
-engine = create_engine(os.getenv("DATABASE_URL"))
+engine = create_engine(os.getenv("DATABASE_URL").lstrip())
 db = scoped_session(sessionmaker(bind=engine))
-
 
 @app.route("/")
 def index():
     return "Project 1: TODO"
-
-@app.route("/test")
-def test():
-    res = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": "3Hh1JKl5mzmGnGbjBOmGg", "isbns": "9781632168146"})
-    return(res.json())
 
