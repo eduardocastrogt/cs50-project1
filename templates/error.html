@@ -1,0 +1,16 @@
+{% extends "layaout.html" %}
+
+
+{% block title %}
+<title>Error!</title>
+{% endblock title %}
+
+{% block content %}
+<div class="row align-items-center justify-content-center vh-100">
+    <div class="jumbotron">
+        <h1>Oh noes, {{ message }}</h1>
+        <input class="btn btn-info" type="button" value="Go back!" onclick="history.back()">
+    </div>
+
+</div>
+{% endblock content %}

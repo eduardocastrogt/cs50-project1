@@ -43,10 +43,11 @@ $$ language plpgsql
 
 
 
---select public.Book_SaveUser('eduardo', 'castro', 'eduardocastrogt@gmail.com', 'umg');
+--select public.Book_SaveUser('eduardo', 'castro', 'eduardocastrogt@gmail.co', 'umg');
 
 --select public.Book_ExistUser('eduardocastrogt@gmail.com', 'umg');
 
---select * from Tbl_User
+--select * from public.Tbl_User
 
 --truncate table Tbl_User
+
