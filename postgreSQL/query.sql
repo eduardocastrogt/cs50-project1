@@ -11,6 +11,7 @@ create table Tbl_User
     Pass text not null --will be crypt
 );
 
+--drop table tbl_book
 create table Tbl_Book
 (
     Id_Book serial primary key,
@@ -48,5 +49,6 @@ $$ language sql
 
 --truncate table Tbl_User
 
-
+begin  transaction isolation level read UNCOMMITTED ;
+select * from tbl_book;
 
