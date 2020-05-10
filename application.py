@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, session, render_template, request
+from flask import Flask, session, render_template, request, redirect, url_for, flash
 from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.sql import text
@@ -62,3 +62,26 @@ def register():
 
     return "Gracias"
 
+# Login route
+@app.route("/login", methods=["GET","POST"])
+def login():
+
+    if request.method == "GET":
+        return render_template("login.html")
+
+    if request.method == "POST":
+        session["user"] = db.execute('select * from public.Book_ExistUser(:email, :password)',
+        {"email": request.form.get("email"), "password": request.form.get("password")}).fetchone()
+
+    if session["user"] == None:
+        return render_template("error.html", message = "email or password invalid.")
+
+    return redirect(url_for("home"))
+
+# Home page
+@app.route("/home", methods=["GET"])
+def home():
+
+    if request.method == "GET":
+        flash("Hola, bienbenido")
+    return render_template("home.html")
