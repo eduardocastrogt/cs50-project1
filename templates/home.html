@@ -1,0 +1,44 @@
+{% extends "layaout.html" %}
+
+{% block title %}
+<title>Home</title>
+{% endblock title %}
+
+{% include "nav.html" %}
+
+{% block content %}
+<!-- hola
+{% for message in get_flashed_messages() %}
+<div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <strong>{{ message }}</strong> You should check in on some of those fields below.
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div> -->
+<div class="row align-items-center justify-content-center p-5">
+    <div class="card">
+        <h4 class="card-header">Looking for a book?</h4>
+        <div class="card-body w-100">
+            <form method="POST">
+                <div class="form-group col-12">
+                    <input type="text" class="form-control" name="search" placeholder="ISBN, title, author" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Search</button>
+            </form>
+        </div>
+        <div class="card-footer text-muted">
+            <p class="lead">
+                How you can search a book? Try this: <br>
+
+                - ISBN: 9781449372620 <br>
+                - Title: Flask Web Development: Developing Web Applications with Python <br>
+                - Author: Miguel Grinberg
+            </p>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+
+
+{% endblock content %}
