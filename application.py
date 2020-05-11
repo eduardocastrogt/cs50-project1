@@ -5,6 +5,7 @@ from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.sql import text
 from sqlalchemy.orm import scoped_session, sessionmaker
+from datetime import datetime
 import requests
 
 
@@ -23,17 +24,10 @@ Session(app)
 engine = create_engine(os.getenv("DATABASE_URL").lstrip())
 db = scoped_session(sessionmaker(bind=engine))
 
+
 #Open connection
 connection = db()
 
-@app.route("/")
-def index():
-    return "Project 1: TODO"
-
-#Test route
-@app.route("/template")
-def template():
-    return render_template("layaout.html", title="Holis")
 
 # Register route
 @app.route("/register", methods=["GET", "POST"])
@@ -57,7 +51,10 @@ def register():
             "password_" : request.form.get("password")})
         db.commit()
 
-    return "Gracias"
+        session["user"] = db.execute('select * from public.Book_ExistUser(:email, :password)',
+        {"email": request.form.get("email"), "password": request.form.get("password")}).fetchone()
+
+    return redirect("/home")
 
 # Login route
 @app.route("/login", methods=["GET","POST"])
@@ -79,12 +76,15 @@ def login():
 @app.route("/home", methods=["GET", "POST"])
 def home():
 
+    if session.get("user") == None:
+        return redirect("/login")
+
     if request.method == "GET":
         return render_template("home.html")
 
     if request.method == "POST":
         
-        libros = db.execute("select * from Tbl_Book where isbn like :search_ or title like :search_ or author like :search_ limit 20",
+        libros = db.execute("select * from Tbl_Book where isbn ilike :search_ or title ilike :search_ or author ilike :search_ limit 20",
             {"search_": "%" + request.form.get("search")+"%" }).fetchall()
 
         if len(libros) == 0:
@@ -92,12 +92,54 @@ def home():
         else:
             print("Si hay libros")
             return render_template("search.html", search=libros)
-        print("CANTIDAD DE FILAS: ", len(libros))
 
-        return "libros"
+#Book detail
+@app.route("/book/<isbn>", methods=["GET", "POST"])
+def book(isbn):
+    if session.get("user") is None:
+        return redirect("/login")
 
+    if request.method == "GET":
+        #Book information
+        session["book"] = db.execute('select * from tbl_book where isbn = :isbn_', {"isbn_": isbn}).fetchone()
+        session["review"] = db.execute('select comment, count_review, name || ' + "' " + "'" +' || lastname as user, register from Tbl_Review a inner join Tbl_User b on a.Id_User = b.Id_User where isbn = :isbn_',
+             {"isbn_": isbn}).fetchall()
 
-# Search
-@app.route("/search")
-def search():
-    return "hola"
+        #Get the key
+        key = os.getenv("GOODREADS_KEY")
+        #Request from Goodreads
+        goodreads = requests.get("https://www.goodreads.com/book/review_counts.json",
+                params={"key": key, "isbns": "0"+isbn})
+
+        #Parse json
+        if goodreads is not None:
+            response = goodreads.json()
+
+        return render_template("detail_book.html", book = session["book"], bookinfo = response['books'][0], review = session["review"])
+
+    if request.method == "POST":
+        
+        if request.form.get("comment") is None or request.form.get("comment") == "":
+            flash("the comment is necessary")
+            return redirect("/book/" + isbn)
+        
+        #Current date
+        dt = datetime.now()
+
+        #Save data
+        try:
+            db.execute("insert into Tbl_Review(id_user, isbn, comment, count_review, register) values(:iduser_, :isbn_, :comment_, :point_, :date_)",
+                {"iduser_": session["user"][0], "isbn_": session["book"][1], 
+                    "comment_": request.form.get("comment"), "point_": request.form.get("points"), "date_": dt})
+            db.commit()
+
+            flash("Your comment has be saved.")
+        except:
+            flash("Maybe you already wrote a comment")
+
+    return redirect("/book/" + isbn)
+
+@app.route("/logout")
+def logout():
+    session["user"] = None
+    return redirect("/login")
