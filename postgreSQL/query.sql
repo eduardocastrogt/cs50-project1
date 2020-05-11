@@ -21,6 +21,18 @@ create table Tbl_Book
     Year int not null
 );
 
+drop table Tbl_Review
+create table Tbl_Review
+(
+    Id_Review serial primary key,
+    Id_user int not null references Tbl_User(Id_User),
+    ISBN text not null,
+    Comment text not null,
+    Count_review int not null,
+    unique(Id_User, ISBN)
+
+);
+
 --Function for store User information 
 create or replace function Book_SaveUser (name_user varchar(50), lastname_user varchar(50), email_user varchar(75), pass_user text) returns void as $$
     begin
@@ -41,14 +53,16 @@ create or replace function Book_ExistUser (email_user varchar(75), user_password
             and Pass = crypt(user_password, Pass);
 $$ language sql
 
---select public.Book_SaveUser('eduardo', 'castro', 'eduardocastrogt@gmail.co', 'umg');
-
---select  * from public.Book_ExistUser('eduardocastrogt@gmail.co', 'umg');
-
---select * from public.Tbl_User
-
---truncate table Tbl_User
-
-begin  transaction isolation level read UNCOMMITTED ;
-select * from tbl_book;
-
+--Function Search Book
+create or replace function Search_Book (search_ text) returns Tbl_book as $$
+begin
+    return QUERY select
+        *
+    from
+        Tbl_book
+    where
+        isbn like search_--like '%' ||  search_ || '%'
+        or title like search_ --like '%' ||  search_ || '%'
+        or author like search_ --like '%' ||  search_ || '%'
+end;
+$$ language sql

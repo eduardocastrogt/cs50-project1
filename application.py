@@ -10,9 +10,6 @@ import requests
 
 app = Flask(__name__)
 
-# Get database_url
-
-
 # Check for environment variable
 if not os.getenv("DATABASE_URL"):
     raise RuntimeError("DATABASE_URL is not set")
@@ -79,9 +76,28 @@ def login():
     return redirect(url_for("home"))
 
 # Home page
-@app.route("/home", methods=["GET"])
+@app.route("/home", methods=["GET", "POST"])
 def home():
 
     if request.method == "GET":
-        flash("Hola, bienbenido")
-    return render_template("home.html")
+        return render_template("home.html")
+
+    if request.method == "POST":
+        
+        libros = db.execute("select * from Tbl_Book where isbn like :search_ or title like :search_ or author like :search_ limit 20",
+            {"search_": "%" + request.form.get("search")+"%" }).fetchall()
+
+        if len(libros) == 0:
+            return render_template("error.html", message="sorry, your search is empty")
+        else:
+            print("Si hay libros")
+            return render_template("search.html", search=libros)
+        print("CANTIDAD DE FILAS: ", len(libros))
+
+        return "libros"
+
+
+# Search
+@app.route("/search")
+def search():
+    return "hola"

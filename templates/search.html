@@ -1,0 +1,48 @@
+{% extends "layaout.html" %}
+
+{% block title %}
+<title>Search result</title>
+{% endblock title %}
+
+
+{% include "nav.html" %}
+
+{% block content %}
+{% if search %}
+<div class="row align-items-center justify-content-center p-5">
+    <div class="card">
+        <h4 class="card-header">Your search</h4>
+        <div class="card-body w-100">
+
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col">ISBN</th>
+                        <th scope="col">Title</th>
+                        <th scope="col">Author</th>
+                        <th scope="col">Year</th>
+                        <th scope="col"></th>
+                    </tr>
+                <tbody>
+                    {% for s in search %}
+                    <tr>
+                        <td>{{s[1]}}</td>
+                        <td>{{s[2]}}</td>
+                        <td>{{s[3]}}</td>
+                        <td>{{s[4]}}</td>
+                        <td><span class="btn btn-info">Detail</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                </thead>
+            </table>
+        </div>
+        <div class="card-footer">
+            <p class="lead">For security the search limit is 20.</p>
+            <input class="btn btn-info" type="button" value="Go back!" onclick="history.back()">
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock content%}
