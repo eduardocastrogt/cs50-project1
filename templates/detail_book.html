@@ -1,0 +1,82 @@
+{% extends "layaout.html" %}
+
+
+{% block title %}
+<title>Book detail</title>
+{% endblock title %}
+
+{% include "nav.html" %}
+
+{% block content %}
+<!-- goodreads do not provide a cover images -->
+{% for message in get_flashed_messages() %}
+<div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <strong> {{ message }}</strong>
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+{% endfor %}
+<!-- This template is provided by bootstrap: https://getbootstrap.com/docs/4.0/examples/offcanvas/ -->
+<div role="main" class="container">
+    <div class="d-flex align-items-center p-3 my-3 text-white-65 bg-primary rounded box-shadow">
+        <img class="mr-3" src="http://covers.openlibrary.org/b/isbn/0{{book[1]}}-M.jpg" alt="" width="180" height="240">
+        <div class="lh-100">
+            <h4 class="mb-0 text-white lh-100">{{book[2]}}</h4>
+            <small>{{book[3]}}</small> / <small>{{book[4]}}</small><br>
+            GoodReaders information
+            <hr>
+            <span class="badge badge-success">No. of rating: {{bookinfo['ratings_count']}}</span> <br>
+            <span class="badge badge-success">Raiting AVG: {{bookinfo['average_rating']}}</span> 
+            
+        </div>
+    </div>
+
+    <div class="my-2 p-2 bg-white rounded box-shadow">
+        <h6 class="border-bottom border-gray pb-2 mb-0">Add a review</h6>
+        <div class="media text-muted pt-3 d-flex align-items-center">
+            <form style="width: 100%;" method="POST">
+                <div class="row">
+                    <div class="col">
+                        <label for="">Points</label>
+                        <select name="points" id="points" class="form-control">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+                    <div class="col-9">
+                        <label for="">Your comment</label>
+                        <input type="text" name="comment" id="comment" class="form-control"
+                            placeholder="Example: This book is great :)" required>
+                    </div>
+                    <div class="col-1 my-2">
+                        <label for=""></label>
+                        <button type="submit" class="btn btn-primary">Send</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="my-3 p-3 bg-white rounded box-shadow">
+        <h6 class="border-bottom border-gray pb-2 mb-0">Last reviews</h6>
+        {% if review %}
+        {% for r in review %}
+        <div class="media text-muted pt-3">
+            <div class="media-body pb-3 mb-0 small lh-125 border-bottom border-gray">
+                <div class="d-flex justify-content-between align-items-center w-100">
+                    <strong class="text-gray-dark">{{r[2]}}</strong>
+                    <p class="text-gray-dark lead">{{r[0]}}</p>
+                    <span>{{r[3].strftime('%Y-%m-%d')}}</span>
+                </div>
+                <h5><span class="badge badge-success">Points: {{r[1]}}</span></h5>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}
