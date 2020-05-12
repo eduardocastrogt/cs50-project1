@@ -154,5 +154,10 @@ def api(isbn):
 
     if book_api is None:
         return jsonify({"Message": "ISBN does not exist."}), 404
-        
+
     return jsonify(dict(book_api.items()))
+
+#Default route
+@app.route("/")
+def index():
+    return redirect("/home")
