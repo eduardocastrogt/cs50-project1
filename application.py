@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, session, render_template, request, redirect, url_for, flash
+from flask import Flask, session, render_template, request, redirect, url_for, flash, jsonify
 from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.sql import text
@@ -84,7 +84,7 @@ def home():
 
     if request.method == "POST":
         
-        libros = db.execute("select * from Tbl_Book where isbn ilike :search_ or title ilike :search_ or author ilike :search_ limit 20",
+        libros = db.execute("select *  from Tbl_Book where isbn ilike :search_ or title ilike :search_ or author ilike :search_ limit 20",
             {"search_": "%" + request.form.get("search")+"%" }).fetchall()
 
         if len(libros) == 0:
@@ -101,15 +101,16 @@ def book(isbn):
 
     if request.method == "GET":
         #Book information
-        session["book"] = db.execute('select * from tbl_book where isbn = :isbn_', {"isbn_": isbn}).fetchone()
-        session["review"] = db.execute('select comment, count_review, name || ' + "' " + "'" +' || lastname as user, register from Tbl_Review a inner join Tbl_User b on a.Id_User = b.Id_User where isbn = :isbn_',
+        session["book"] = db.execute("select * from tbl_book where isbn = :isbn_", 
+            {"isbn_": isbn}).fetchone()
+        session["review"] = db.execute('select comment, count_review, concat(name,' + "' " + "'" + ',lastname) as user, register from Tbl_Review a inner join Tbl_User b on a.Id_User = b.Id_User where a.isbn = :isbn_',
              {"isbn_": isbn}).fetchall()
 
         #Get the key
         key = os.getenv("GOODREADS_KEY")
         #Request from Goodreads
         goodreads = requests.get("https://www.goodreads.com/book/review_counts.json",
-                params={"key": key, "isbns": "0"+isbn})
+                params={"key": key, "isbns": isbn})
 
         #Parse json
         if goodreads is not None:
@@ -143,3 +144,15 @@ def book(isbn):
 def logout():
     session["user"] = None
     return redirect("/login")
+
+
+@app.route("/api/<isbn>")
+def api(isbn):
+
+    book_api = db.execute('select a.title, a.author, a.year, a.isbn, count(b.Id_Review) as review_count, coalesce(avg(b.Count_review),0) as average_score from Tbl_book a left join Tbl_Review b on a.isbn = b.isbn where a.isbn = :isbn_ group by a.title, a.author, a.year, a.isbn',
+        {"isbn_": isbn}).fetchone()
+
+    if book_api is None:
+        return jsonify({"Message": "ISBN does not exist."}), 404
+        
+    return jsonify(dict(book_api.items()))

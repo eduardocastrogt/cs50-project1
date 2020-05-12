@@ -67,13 +67,3 @@ begin
         or author like search_ --like '%' ||  search_ || '%'
 end;
 $$ language sql
-
-
-select * from tbl_review
-select now()
-
-
-
-
-
-select comment, count_review, name || ' ' || lastname as user, register from Tbl_Review a inner join Tbl_User b on a.Id_User = b.Id_User
