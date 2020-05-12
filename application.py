@@ -155,7 +155,11 @@ def api(isbn):
     if book_api is None:
         return jsonify({"Message": "ISBN does not exist."}), 404
 
-    return jsonify(dict(book_api.items()))
+    #Cast the result
+    response = dict(dict(book_api.items()))
+    response["average_score"] = float('%.2f'%(response['average_score']))
+
+    return jsonify(response)
 
 #Default route
 @app.route("/")
