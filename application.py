@@ -8,7 +8,6 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from datetime import datetime
 import requests
 
-
 app = Flask(__name__)
 
 # Check for environment variable
@@ -24,11 +23,6 @@ Session(app)
 engine = create_engine(os.getenv("DATABASE_URL").lstrip())
 db = scoped_session(sessionmaker(bind=engine))
 
-
-#Open connection
-connection = db()
-
-
 # Register route
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -37,22 +31,25 @@ def register():
     
     if request.method == "POST":
         #Try get email
-        exist_email = db.execute('select email from tbl_user where email = :email limit 1', 
-            {"email":request.form.get("email")}).fetchone()
+        try:
+            exist_email = db.execute('select email from tbl_user where email = :email limit 1', 
+                {"email":request.form.get("email")}).fetchone()
 
-        if exist_email:
-            return render_template("error.html", message = "the email exists.")
+            if exist_email:
+                return render_template("error.html", message = "the email exists.")
 
-        if request.form.get("password") != request.form.get("cpassword"):
-            return render_template("error.html", message = "the password should be the same.")
+            if request.form.get("password") != request.form.get("cpassword"):
+                return render_template("error.html", message = "the password should be the same.")
 
-        db.execute('select public.Book_SaveUser(:name_, :lastname_, :email_, :password_)',
-            {"name_": request.form.get("name"), "lastname_": request.form.get("lastname"), "email_" :request.form.get("email"), 
-            "password_" : request.form.get("password")})
-        db.commit()
+            db.execute('select public.Book_SaveUser(:name_, :lastname_, :email_, :password_)',
+                {"name_": request.form.get("name"), "lastname_": request.form.get("lastname"), "email_" :request.form.get("email"), 
+                "password_" : request.form.get("password")})
+            db.commit()
 
-        session["user"] = db.execute('select * from public.Book_ExistUser(:email, :password)',
-        {"email": request.form.get("email"), "password": request.form.get("password")}).fetchone()
+            session["user"] = db.execute('select * from public.Book_ExistUser(:email, :password)',
+            {"email": request.form.get("email"), "password": request.form.get("password")}).fetchone()
+        except:
+            return render_template("error.html", message = "crash... :( ")
 
     return redirect("/home")
 
@@ -63,9 +60,12 @@ def login():
     if request.method == "GET":
         return render_template("login.html")
 
-    if request.method == "POST":
-        session["user"] = db.execute('select * from public.Book_ExistUser(:email, :password)',
-        {"email": request.form.get("email"), "password": request.form.get("password")}).fetchone()
+    try:
+        if request.method == "POST":
+            session["user"] = db.execute('select * from public.Book_ExistUser(:email, :password)',
+            {"email": request.form.get("email").strip(), "password": request.form.get("password")}).fetchone()
+    except:
+        return render_template("error.html", message = "crash... :( ")
 
     if session["user"] == None:
         return render_template("error.html", message = "email or password invalid.")
@@ -84,13 +84,15 @@ def home():
 
     if request.method == "POST":
         
-        libros = db.execute("select *  from Tbl_Book where isbn ilike :search_ or title ilike :search_ or author ilike :search_ limit 20",
-            {"search_": "%" + request.form.get("search")+"%" }).fetchall()
+        try:
+            libros = db.execute("select *  from Tbl_Book where isbn ilike :search_ or title ilike :search_ or author ilike :search_ limit 20",
+                {"search_": "%" + request.form.get("search").strip()+"%" }).fetchall()
+        except:
+            return render_template("error.html", message = "crash... :( ")
 
         if len(libros) == 0:
             return render_template("error.html", message="sorry, your search is empty")
         else:
-            print("Si hay libros")
             return render_template("search.html", search=libros)
 
 #Book detail
@@ -101,16 +103,19 @@ def book(isbn):
 
     if request.method == "GET":
         #Book information
-        session["book"] = db.execute("select * from tbl_book where isbn = :isbn_", 
-            {"isbn_": isbn}).fetchone()
-        session["review"] = db.execute('select comment, count_review, concat(name,' + "' " + "'" + ',lastname) as user, register from Tbl_Review a inner join Tbl_User b on a.Id_User = b.Id_User where a.isbn = :isbn_',
-             {"isbn_": isbn}).fetchall()
+        try:
+            session["book"] = db.execute("select * from tbl_book where isbn = :isbn_", 
+                {"isbn_": isbn}).fetchone()
+            session["review"] = db.execute('select comment, count_review, concat(name,' + "' " + "'" + ',lastname) as user, register from Tbl_Review a inner join Tbl_User b on a.Id_User = b.Id_User where a.isbn = :isbn_',
+                 {"isbn_": isbn}).fetchall()
 
-        #Get the key
-        key = os.getenv("GOODREADS_KEY")
-        #Request from Goodreads
-        goodreads = requests.get("https://www.goodreads.com/book/review_counts.json",
-                params={"key": key, "isbns": isbn})
+            #Get the key
+            key = os.getenv("GOODREADS_KEY")
+            #Request from Goodreads
+            goodreads = requests.get("https://www.goodreads.com/book/review_counts.json",
+                    params={"key": key, "isbns": isbn})
+        except:
+            return render_template("error.html", message = "crash... :( ")
 
         #Parse json
         if goodreads is not None:
@@ -121,7 +126,7 @@ def book(isbn):
     if request.method == "POST":
         
         if request.form.get("comment") is None or request.form.get("comment") == "":
-            flash("the comment is necessary")
+            flash("The comment is necessary")
             return redirect("/book/" + isbn)
         
         #Current date
@@ -133,7 +138,6 @@ def book(isbn):
                 {"iduser_": session["user"][0], "isbn_": session["book"][1], 
                     "comment_": request.form.get("comment"), "point_": request.form.get("points"), "date_": dt})
             db.commit()
-
             flash("Your comment has be saved.")
         except:
             flash("Maybe you already wrote a comment")
@@ -145,23 +149,26 @@ def logout():
     session["user"] = None
     return redirect("/login")
 
-
 @app.route("/api/<isbn>")
 def api(isbn):
 
-    book_api = db.execute('select a.title, a.author, a.year, a.isbn, count(b.Id_Review) as review_count, coalesce(avg(b.Count_review),0) as average_score from Tbl_book a left join Tbl_Review b on a.isbn = b.isbn where a.isbn = :isbn_ group by a.title, a.author, a.year, a.isbn',
-        {"isbn_": isbn}).fetchone()
+    try:
+        book_api = db.execute('select a.title, a.author, a.year, a.isbn, count(b.Id_Review) as review_count, coalesce(avg(b.Count_review),0) as average_score from Tbl_book a left join Tbl_Review b on a.isbn = b.isbn where a.isbn = :isbn_ group by a.title, a.author, a.year, a.isbn',
+            {"isbn_": isbn}).fetchone()
+    except:
+        return jsonify({"Message": "ISBN does not exist."}), 404
 
     if book_api is None:
         return jsonify({"Message": "ISBN does not exist."}), 404
 
     #Cast the result
-    response = dict(dict(book_api.items()))
-    response["average_score"] = float('%.2f'%(response['average_score']))
+    response = dict(book_api.items())
+    response["average_score"] = float('%.2f'%(response["average_score"]))
 
     return jsonify(response)
 
 #Default route
 @app.route("/")
 def index():
+    #Return home always
     return redirect("/home")
